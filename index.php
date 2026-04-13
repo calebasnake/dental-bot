@@ -32,8 +32,7 @@ try {
     $pdo = new PDO($dsn, $user, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
     // ስሙን ወደ "Appointment" ሰንጠረዥ ማስገባት
-    $stmt = $pdo->prepare("INSERT INTO \"Appointment\" (user_id, full_name) VALUES (?, ?)");
-    $stmt->execute([$chatId, $message]);
+$stmt = $pdo->prepare("INSERT INTO appointments (user_id, full_name) VALUES (?, ?)");    $stmt->execute([$chatId, $message]);
 
     sendMessage($chatId, "እናመሰግናለን! መረጃዎ ተመዝግቧል።");
 
