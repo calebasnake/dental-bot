@@ -16,7 +16,7 @@ try {
     $pdo = new PDO($dsn, $user, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    // ግንኙነት ካልተሳካ እዚህ ጋር ሎግ ማድረግ ይቻላል
+    // ጸጥ እንዲል
 }
 
 // 3. መረጃ መቀበያ
@@ -28,25 +28,18 @@ $message = $update["message"]["text"] ?? "";
 
 if ($chatId) {
     if ($message == "/start") {
-        $response = "እንኳን ወደ ጥርስ ህክምና ክሊኒካችን በደህና መጡ! \n\nቀጠሮ ለመያዝ ስምዎን እና ስልክዎን እንዲህ አድርገው ይላኩ፦ \n\nአበበ ካሳ 0911223344";
+        $response = "እንኳን ደህና መጡ! \n\nቀጠሮ ለመያዝ ስም እና ስልክዎን ይላኩ። \nምሳሌ፦ አበበ ካሳ 0911223344";
         sendMessage($chatId, $response);
     } else {
-        // ስም እና ስልክ መለየት
-        $parts = explode(" ", trim($message));
-        if (count($parts) >= 2) {
-            $phone = end($parts);
-            $fullName = trim(str_replace($phone, "", $message));
-
-            try {
-                $stmt = $pdo->prepare("INSERT INTO appointments (user_id, full_name, phone_number) VALUES (?, ?, ?)");
-                $stmt->execute([$chatId, $fullName, $phone]);
-                
-                sendMessage($chatId, "እናመሰግናለን $fullName! መረጃዎ ተመዝግቧል።");
-            } catch (Exception $e) {
-                sendMessage($chatId, "ይቅርታ፣ መረጃውን መመዝገብ አልቻልኩም።");
-            }
-        } else {
-            sendMessage($chatId, "እባክዎ ስም እና ስልክዎን በትክክል ያስገቡ (ለምሳሌ፦ አበበ ካሳ 0911223344)");
+        // ዳታቤዝ ውስጥ ማስገባት (Table ስሙ 'Appointment' ተብሎ ተስተካክሏል)
+        try {
+            $stmt = $pdo->prepare("INSERT INTO \"Appointment\" (user_id, full_name) VALUES (?, ?)");
+            $stmt->execute([$chatId, $message]);
+            
+            sendMessage($chatId, "እናመሰግናለን! መረጃዎ ተመዝግቧል።");
+        } catch (Exception $e) {
+            // ስህተት ካለ ለቦቱ ይናገራል
+            sendMessage($chatId, "ይቅርታ፣ መረጃውን መመዝገብ አልቻልኩም፦ " . $e->getMessage());
         }
     }
 }
