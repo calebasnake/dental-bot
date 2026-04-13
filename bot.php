@@ -1,42 +1,48 @@
 <?php
+// 1. የቴሌግራም ቦት መረጃ
 $botToken = "8301010392:AAHooXc-s0kgn8ghVlazHSfxT3AKV2mQ1DE";
 $website = "https://api.telegram.org/bot" . $botToken;
 
+// 2. የ Supabase ዳታቤዝ መረጃ
 $host = "db.jzolixisaneilbuourna.supabase.co";
 $port = "5432";
 $dbname = "postgres";
 $user = "postgres";
 $password = "+7DTfkA.7kCPr_K";
 
+// ዳታቤዝ ግንኙነት
 try {
     $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
-    $pdo = new PDO($dsn, $user, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $pdo = new PDO($dsn, $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    // Error logic here if needed
+    // ግንኙነቱ ካልተሳካ እዚህ ጋር ስህተቱን ማየት ይቻላል
 }
 
+// 3. መረጃ መቀበያ
 $content = file_get_contents("php://input");
 $update = json_decode($content, TRUE);
+
 $chatId = $update["message"]["chat"]["id"] ?? null;
 $message = $update["message"]["text"] ?? "";
 
 if ($chatId) {
     if ($message == "/start") {
-        $response = "እንኳን ወደ ጥርስ ህክምና ክሊኒካችን በደህና መጡ! \n\nቀጠሮ ለመያዝ ስምዎን እና ስልክዎን እንዲህ አድርገው ይላኩ፦ \n\n*አበበ ካሳ 0911223344*";
+        $response = "እንኳን ወደ ጥርስ ህክምና ክሊኒካችን በደህና መጡ! \n\nቀጠሮ ለመያዝ ስምዎን እና ስልክዎን እንዲህ አድርገው ይላኩ፦ \n\nአበበ ካሳ 0911223344";
         sendMessage($chatId, $response);
     } else {
-        // ስም እና ስልክ መለየት (በቀላል መንገድ)
-        $data = explode(" ", $message);
-        $fullName = $data[0] . " " . ($data[1] ?? "");
-        $phone = end($data);
+        // ስም እና ስልክ መለየት
+        $parts = explode(" ", $message);
+        $phone = end($parts); // የመጨረሻው ቃል ስልክ ነው ብለን እናስባለን
+        $fullName = str_replace($phone, "", $message); // የቀረው ስም ነው
 
         try {
             $stmt = $pdo->prepare("INSERT INTO appointments (user_id, full_name, phone_number) VALUES (?, ?, ?)");
-            $stmt->execute([$chatId, $fullName, $phone]);
+            $stmt->execute([$chatId, trim($fullName), trim($phone)]);
             
-            sendMessage($chatId, "እናመሰግናለን $fullName! መረጃዎ በስኬት ተመዝግቧል።");
+            sendMessage($chatId, "እናመሰግናለን " . trim($fullName) . "! መረጃዎ ተመዝግቧል።");
         } catch (Exception $e) {
-            sendMessage($chatId, "ይቅርታ፣ ዳታቤዝ ግንኙነት ላይ ችግር ተፈጥሯል።");
+            sendMessage($chatId, "ይቅርታ፣ መረጃውን መመዝገብ አልቻልኩም። እባክዎ በሌላ ጊዜ ይሞክሩ።");
         }
     }
 }
