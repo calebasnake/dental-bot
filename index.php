@@ -1,20 +1,26 @@
 <?php
-// 1. መረጃዎችን ከ Environment Variables ማግኘት
-// ለጊዜው እንዲህ አድርገህ ሞክረው
-$botToken = "8640297748:AAG7yey9RNEO8yX0hGNlTA6VBucwxcViN_U";
-$supabase_key = "sb_publishable_8kjcvbAT4woXyVlfJkNDMg_pjsQkNgr";
+// 1. መረጃዎችን ከ Render Environment Variables ማግኘት
+$botToken = getenv('BOT_TOKEN');
+$supabase_key = getenv('SUPABASE_KEY');
 $supabase_url = "https://jzolixisaneilbuourna.supabase.co/rest/v1/appointments";
 $website = "https://api.telegram.org/bot" . $botToken;
 
 $content = file_get_contents("php://input");
 $update = json_decode($content, TRUE);
 
-// መልዕክት ወይም የስልክ ቁጥር መኖሩን ማረጋገጥ
-$chatId = $update["message"]["chat"]["id"] ?? null;
+// የቻት መለያ ቁጥር ማግኘት
+$chatId = $update["message"]["chat"]["id"] ?? $update["callback_query"]["message"]["chat"]["id"] ?? null;
 $message = $update["message"]["text"] ?? "";
 $contact = $update["message"]["contact"] ?? null;
 
 if (!$chatId) exit;
+
+// --- የደህንነት ማረጋገጫ (Debug Mode) ---
+if (!$botToken || !$supabase_key) {
+    $missing = !$botToken ? "BOT_TOKEN" : "SUPABASE_KEY";
+    sendMessage($chatId, "⚠️ ስህተት፡ Render ላይ '$missing' አልተገኘም! እባክዎ Settings -> Environment Variables ገጽ ላይ በትክክል መሙላትዎን ያረጋግጡ።");
+    exit;
+}
 
 // 2. /start ሲባል በ Buttons ሰላምታ መስጠት
 if ($message == "/start") {
@@ -35,22 +41,22 @@ if ($message == "/start") {
 if ($contact) {
     $phone = $contact['phone_number'];
     
-    // መረጃውን ወደ Supabase መላክ (ስልክ ቁጥር ብቻ መጀመሪያ)
     $data = [
         "user_id" => (string)$chatId,
         "phone_number" => $phone
     ];
     
     if (postToSupabase($supabase_url, $supabase_key, $data)) {
-        // ስልኩ ከተያዘ በኋላ ስም እንዲልክ መጠየቅ
         sendMessage($chatId, "በጣም ጥሩ! አሁን ደግሞ ሙሉ ስምዎን ይላኩ።");
+    } else {
+        sendMessage($chatId, "⚠️ ዳታቤዝ ላይ መመዝገብ አልተቻለም። እባክዎ ትንሽ ቆይተው ይሞክሩ።");
     }
     exit;
 }
 
 // 4. ስም ሲላክ ዳታቤዙን ማደስ (Update)
-if (!empty($message)) {
-    // የመጨረሻውን የዚህን ሰው ሪከርድ መፈለግ
+if (!empty($message) && $message != "/start") {
+    // የመጨረሻውን የዚህን ሰው ሪከርድ መፈለግ (ስልክ ኖሮት ስም የሌለውን)
     $check_url = $supabase_url . "?user_id=eq." . $chatId . "&order=created_at.desc&limit=1";
     $user_data = getFromSupabase($check_url, $supabase_key);
 
@@ -61,7 +67,7 @@ if (!empty($message)) {
         $update_data = ["full_name" => $message];
         patchSupabase($update_url, $supabase_key, $update_data);
         
-        sendMessage($chatId, "✅ ተሳክቷል! ስምዎ እና ስልክዎ ተመዝግቧል። በቅርቡ እንደውልልዎታለን።");
+        sendMessage($chatId, "✅ ተሳክቷል! ስምዎ እና ስልክዎ ተመዝግቧል። በቅርቡ ቀጠሮ ለመያዝ እንደውልልዎታለን።");
     }
 }
 
@@ -109,3 +115,4 @@ function patchSupabase($url, $key, $data) {
     curl_exec($ch);
     curl_close($ch);
 }
+?>
