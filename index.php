@@ -1,7 +1,8 @@
 <?php
 // 1. መረጃዎችን ከ Environment Variables ማግኘት
-$botToken = getenv('BOT_TOKEN');
-$supabase_key = getenv('SUPABASE_KEY');
+// ለጊዜው እንዲህ አድርገህ ሞክረው
+$botToken = "8640297748:AAG7yey9RNEO8yX0hGNlTA6VBucwxcViN_U";
+$supabase_key = "sb_publishable_8kjcvbAT4woXyVlfJkNDMg_pjsQkNgr";
 $supabase_url = "https://jzolixisaneilbuourna.supabase.co/rest/v1/appointments";
 $website = "https://api.telegram.org/bot" . $botToken;
 
