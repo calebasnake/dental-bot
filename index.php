@@ -6,7 +6,7 @@ $website = "https://api.telegram.org/bot" . $botToken;
 // 2. የ Supabase REST API መረጃ
 // ማሳሰቢያ፦ ይህንን ANON_KEY ከ Supabase Settings -> API ማግኘት አለብህ
 $supabase_url = "https://jzolixisaneilbuourna.supabase.co/rest/v1/appointments";
-$supabase_key = "እዚህ_ጋር_የአንተን_SUPABASE_ANON_KEY_ለጥፍ"; 
+$supabase_key = "sb_publishable_8kjcvbAT4woXyVlfJkNDMg_pjsQkNgr"; 
 
 $content = file_get_contents("php://input");
 $update = json_decode($content, TRUE);
