@@ -1,28 +1,20 @@
 <?php
-// 1. መረጃዎችን ከ Render Environment Variables ማግኘት
-$botToken = getenv('BOT_TOKEN');
-$supabase_key = getenv('SUPABASE_KEY');
+// 1. መረጃዎችን ማግኘት (ከ Render ወይም በቀጥታ)
+$botToken = getenv('BOT_TOKEN') ?: "8640297748:AAG7yey9RNEO8yX0hGNlTA6VBucwxcViN_U";
+$supabase_key = getenv('SUPABASE_KEY') ?: "sb_publishable_8kjcvbAT4woXyVlfJkNDMg_pjsQkNgr";
 $supabase_url = "https://jzolixisaneilbuourna.supabase.co/rest/v1/appointments";
 $website = "https://api.telegram.org/bot" . $botToken;
 
 $content = file_get_contents("php://input");
 $update = json_decode($content, TRUE);
 
-// የቻት መለያ ቁጥር ማግኘት
 $chatId = $update["message"]["chat"]["id"] ?? $update["callback_query"]["message"]["chat"]["id"] ?? null;
 $message = $update["message"]["text"] ?? "";
 $contact = $update["message"]["contact"] ?? null;
 
 if (!$chatId) exit;
 
-// --- የደህንነት ማረጋገጫ (Debug Mode) ---
-if (!$botToken || !$supabase_key) {
-    $missing = !$botToken ? "BOT_TOKEN" : "SUPABASE_KEY";
-    sendMessage($chatId, "⚠️ ስህተት፡ Render ላይ '$missing' አልተገኘም!");
-    exit;
-}
-
-// 2. /start ሲባል በ Buttons ሰላምታ መስጠት
+// 2. /start ሲባል ምላሽ መስጠት
 if ($message == "/start") {
     $keyboard = [
         'keyboard' => [[
@@ -41,14 +33,12 @@ if ($message == "/start") {
 if ($contact) {
     $phone = $contact['phone_number'];
     $data = ["user_id" => (string)$chatId, "phone_number" => $phone];
-    
-    if (postToSupabase($supabase_url, $supabase_key, $data)) {
-        sendMessage($chatId, "በጣም ጥሩ! አሁን ደግሞ ሙሉ ስምዎን ይላኩ።");
-    }
+    postToSupabase($supabase_url, $supabase_key, $data);
+    sendMessage($chatId, "በጣም ጥሩ! አሁን ደግሞ ሙሉ ስምዎን ይላኩ።");
     exit;
 }
 
-// 4. ስም ሲላክ ዳታቤዙን ማደስ
+// 4. ስም ሲላክ መቀበል
 if (!empty($message) && $message != "/start") {
     $check_url = $supabase_url . "?user_id=eq." . $chatId . "&order=created_at.desc&limit=1";
     $user_data = getFromSupabase($check_url, $supabase_key);
@@ -62,7 +52,7 @@ if (!empty($message) && $message != "/start") {
     }
 }
 
-// --- ረዳት ፈንክሽኖች ---
+// --- Functions ---
 function sendMessage($chatId, $text, $keyboard = null) {
     global $website;
     $postData = ['chat_id' => $chatId, 'text' => $text];
@@ -80,10 +70,8 @@ function postToSupabase($url, $key, $data) {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ["apikey: $key", "Authorization: Bearer $key", "Content-Type: application/json"]);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_exec($ch);
     curl_close($ch);
-    return true;
 }
 
 function getFromSupabase($url, $key) {
